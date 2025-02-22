@@ -15,7 +15,7 @@ Residente.: Jackson da Silva Carneiro
 #define LED_NORMAL 11
 #define LED_ALARM 13
 
-int event = 0;  // VARIÁVEL GLOBAL QUE SERÁ UTILIZADA PARA CONTAGEM DE EVENTOS
+int alarme = 0;  // VARIÁVEL GLOBAL QUE SERÁ UTILIZADA PARA CONTAGEM DE EVENTOS
 
 void config_GPIO(){   // CONFIGURAÇÃO DAS GPIO's A SEREM UTILIZADAS
 
@@ -37,9 +37,9 @@ gpio_pull_up(PUSH_BUTTON_B);
 
 static void gpio_irq_handler(uint gpio, uint32_t events) { //TRATAMENTO DA INTERRUPÇÃO GERADA PELO EVENTO DE ALARME OU ATENDIMENTO DO MESMO
     if (gpio == PUSH_BUTTON_A) {
-       event++;// incrementa a variável event para envio de mensagem de presença de alarme
+       alarme++;// incrementa a variável event para envio de mensagem de presença de alarme
     } else if (gpio == PUSH_BUTTON_B) {
-        event = event*0;  // retorna o valor da variável event para 0 o que indica que o alarme foi resolvido
+        alarme = 0;  // retorna o valor da variável event para 0 o que indica que o alarme foi resolvido
     }
 }
 
@@ -50,20 +50,21 @@ int main(){
     config_GPIO();
                             // LINHAS PARA IDENTIFICAÇÃO E ENNCAMINHAMENTO DA INTERRUPÇÃO
 gpio_set_irq_enabled_with_callback(PUSH_BUTTON_A, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
+sleep_ms(50);
 gpio_set_irq_enabled_with_callback(PUSH_BUTTON_B, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
-
+sleep_ms(50);
                    
     while (true) {      // LOOP PRINPCIPAL=> IRÁ LER OS EVENTOS E ENVIAR AS INFORMAÇÕES
 
-        if(event>0){
+        if(alarme>0){
             gpio_put(LED_NORMAL, false);
             gpio_put(LED_ALARM, true);
-            printf("Existe %d alarmes ativos!!/n", &event);
+            printf("\n\tExiste %d alarmes ativos!! \n", alarme);
         }
-        else{
+        else if(alarme==0){
             gpio_put(LED_ALARM, false);
             gpio_put(LED_NORMAL, true);
-            printf("SISTEMA EM FUNCIONAMENTO NORMAL");
+            printf("\n\tSISTEMA EM FUNCIONAMENTO NORMAL\n");
         }
         
         sleep_ms(5000);
