@@ -15,23 +15,57 @@ Residente.: Jackson da Silva Carneiro
 #define LED_NORMAL 11
 #define LED_ALARM 13
 
-int event = 0;
+int event = 0;  // VARIÁVEL GLOBAL QUE SERÁ UTILIZADA PARA CONTAGEM DE EVENTOS
 
-void config_GPIO(){
+void config_GPIO(){   // CONFIGURAÇÃO DAS GPIO's A SEREM UTILIZADAS
 
-    
+gpio_init(LED_ALARM);   // LED PARA INDICAR SITUAÇÃO DE ALARME
+gpio_set_dir(LED_ALARM, GPIO_OUT);
+
+gpio_init(LED_NORMAL);   // LED PARA INDICAÇÃO DE ESTADO NORMAL
+gpio_set_dir(LED_NORMAL, GPIO_OUT);
+
+gpio_init(PUSH_BUTTON_A);  // PUSH_BUTTON_A PARA SIMULAÇÃO DE OCORRÊNCIA DE ALARME
+gpio_set_dir(PUSH_BUTTON_A, GPIO_IN);
+gpio_pull_up(PUSH_BUTTON_A);
+
+gpio_init(PUSH_BUTTON_B);   // PUSH_BUTTON_B PARA SIMULAÇÃO DE ATENDIMENTO AO ALARME
+gpio_set_dir(PUSH_BUTTON_B, GPIO_IN);
+gpio_pull_up(PUSH_BUTTON_B);
+
+}
+
+static void gpio_irq_handler(uint gpio, uint32_t events) { //TRATAMENTO DA INTERRUPÇÃO GERADA PELO EVENTO DE ALARME OU ATENDIMENTO DO MESMO
+    if (gpio == PUSH_BUTTON_A) {
+       event++;// incrementa a variável event para envio de mensagem de presença de alarme
+    } else if (gpio == PUSH_BUTTON_B) {
+        event = event*0;  // retorna o valor da variável event para 0 o que indica que o alarme foi resolvido
+    }
 }
 
 
+int main(){
+                        // INICIALIZAÇÃO E CONFIGURAÇÃO
+     stdio_init_all();
+    config_GPIO();
+                            // LINHAS PARA IDENTIFICAÇÃO E ENNCAMINHAMENTO DA INTERRUPÇÃO
+gpio_set_irq_enabled_with_callback(PUSH_BUTTON_A, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
+gpio_set_irq_enabled_with_callback(PUSH_BUTTON_B, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
 
+                   
+    while (true) {      // LOOP PRINPCIPAL=> IRÁ LER OS EVENTOS E ENVIAR AS INFORMAÇÕES
 
-
-int main()
-{
-    stdio_init_all();
-
-    while (true) {
-        printf("Hello, world!\n");
-        sleep_ms(1000);
+        if(event>0){
+            gpio_put(LED_NORMAL, false);
+            gpio_put(LED_ALARM, true);
+            printf("Existe %d alarmes ativos!!/n", &event);
+        }
+        else{
+            gpio_put(LED_ALARM, false);
+            gpio_put(LED_NORMAL, true);
+            printf("SISTEMA EM FUNCIONAMENTO NORMAL");
+        }
+        
+        sleep_ms(5000);
     }
 }
